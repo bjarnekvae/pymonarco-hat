@@ -1,1 +1,1 @@
-from pymonarco_hat import *
+from .pymonarco_hat import *
