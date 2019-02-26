@@ -1,5 +1,6 @@
 import ctypes
 
+
 class _monarco_struct_sdc_t(ctypes.Structure):
     _pack_ = 1
     _fields_ = [('value', ctypes.c_uint16),
