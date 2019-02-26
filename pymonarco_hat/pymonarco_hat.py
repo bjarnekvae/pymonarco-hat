@@ -88,7 +88,8 @@ class Monarco:
     def __init__(self, lib_path, spi_interface, spi_clock, debug_print_prefix):
         self.__monarco = ctypes.CDLL(lib_path)
         self.__cxt = _monarco_cxt_t()
-        self.__monarco.monarco_init(ctypes.pointer(self.__cxt), spi_interface, spi_clock, debug_print_prefix)
+        self.__monarco.monarco_init(ctypes.pointer(self.__cxt), ctypes.c_char_p(spi_interface.encode('utf-8')),
+                                    ctypes.c_uint32(spi_clock), ctypes.c_char_p(debug_print_prefix.encode('utf-8')))
         self.__cxt.tx_data.led_en = ctypes.c_uint8(0)  # Disable control over LEDs
 
     def set_analog_out(self, port, value):
