@@ -4,16 +4,16 @@ import ctypes
 class _monarco_struct_sdc_t(ctypes.Structure):
     _pack_ = 1
     _fields_ = [('value', ctypes.c_uint16),
-              ('address', ctypes.c_uint16, 12),
-              ('write', ctypes.c_uint8, 1),
-              ('error', ctypes.c_uint8, 1),
-              ('reserved', ctypes.c_uint8, 2), ]
+                ('address', ctypes.c_uint16, 12),
+                ('write', ctypes.c_uint8, 1),
+                ('error', ctypes.c_uint8, 1),
+                ('reserved', ctypes.c_uint8, 2), ]
 
 
 class _monarco_struct_control_byte_t(ctypes.Structure):
     _pack_ = 1
-    _fields_ = [('status_led_en', ctypes.c_uint8, 1),
-                ('status_led_on ', ctypes.c_uint8, 1),
+    _fields_ = [('status_led_mask', ctypes.c_uint8, 1),
+                ('status_led_value ', ctypes.c_uint8, 1),
                 ('ow_shutdown ', ctypes.c_uint8, 1),
                 ('reserved1', ctypes.c_uint8, 1),
                 ('cnt1_reset', ctypes.c_uint8, 1),
@@ -33,8 +33,8 @@ class _monarco_struct_tx_t(ctypes.Structure):
     _pack_ = 1
     _fields_ = [('sdc_req', _monarco_struct_sdc_t),
                 ('control_byte', _monarco_struct_control_byte_t),
-                ('led_en', ctypes.c_uint8),
-                ('led_on', ctypes.c_uint8),
+                ('led_mask', ctypes.c_uint8),
+                ('led_value', ctypes.c_uint8),
                 ('dout', ctypes.c_uint8),
                 ('pwm1_div', ctypes.c_uint16),
                 ('pwm1a_dc', ctypes.c_uint16),
