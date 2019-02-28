@@ -119,6 +119,16 @@ AIN2 = 2
 class Monarco(threading.Thread):
     def __init__(self, lib_path, spi_interface='/dev/spidev0.0', spi_clock=4000000,
                  dprint_prefix='', debug_flag=0, cycle_interval=0.01):
+        """
+        Initiate Monarco HAT shield, start thread for writing to IO.
+        :param lib_path: Path to Monarco-HAT lib file (eg. /path/to/lib/libmonarco.so
+        :param spi_interface: Raspberry Pi SPI interface used to communicate with shield
+        :param spi_clock: SPI clock speed in hz
+        :param dprint_prefix: Prefix string to debug functionality
+        :param debug_flag: Debug data to print (e.g debug_flag = MONARCO_DPF_ERROR | MONARCO_DPF_WARNING), for printing
+        errors and warnings
+        :param cycle_interval: How often to read/write PLC IO in seconds.
+        """
 
         self.__monarco = ctypes.CDLL(lib_path)
         self.__cxt = _monarco_cxt_t()
@@ -139,6 +149,13 @@ class Monarco(threading.Thread):
             time.sleep(self.cycle_interval)
 
     def set_digital_out(self, port, value):
+        """
+        Write to digital output
+        :param port: What output to write to, must be DOUT[1-4]
+        :param value: What value to write to port, must be HIGH or LOW
+        :return: None
+        """
+
         assert port in [DOUT1, DOUT2, DOUT3, DOUT4], "Invalid digital out port"
         assert value == LOW or value == HIGH, "Invalid digital out value"
 
@@ -149,12 +166,27 @@ class Monarco(threading.Thread):
                 self.__cxt.tx_data.dout = ctypes.c_uint8(self.__cxt.tx_data.dout | (1 << port-1))
 
     def get_digital_in(self, port):
+        """
+        Read digital input
+        :param port: What port to read from, must be DIN[1-4]
+        :return: True og False
+        """
+
         assert port in [DIN1, DIN2, DIN3, DIN4], "Invalid digital in port"
 
         with self.__mutex:
             return self.__cxt.rx_data.din & (1 << port-1)
 
     def set_pwm_frequency(self, channel,  pwm_frequency):
+        """
+        Set PWM output frequency.
+        PWM_CHANNEL1 set frequency for port DOUT1, DOUT2, DOUT3
+        PWM_CHANNEL2 set frequency for port DOUT4
+        :param channel: What channel to set PWM frequency, must be PWM_CHANNEL[1-2]
+        :param pwm_frequency: PWM frequency in Hz, must be between 1 Hz and 100.000 Hz
+        :return: None
+        """
+
         assert channel in [PWM_CHANNEL1, PWM_CHANNEL2], "Invalid PWM port"
         assert 1.0 <= pwm_frequency < 100000.0, "PWM frequency out of range: {}".format(pwm_frequency)
 
@@ -165,6 +197,13 @@ class Monarco(threading.Thread):
                 self.__cxt.tx_data.pwm2_div = self.__monarco.monarco_util_pwm_freq_to_u16(ctypes.c_double(pwm_frequency))
 
     def set_pwm_out(self, port, value):
+        """
+        Write to PWM output
+        :param port: What output to write to, must be DOUT[1-4]
+        :param value: What value to write to port, must be between 0 and 1
+        :return: None
+        """
+
         assert port in [DOUT1, DOUT2, DOUT3, DOUT4], "Invalid digital out port"
         assert 0 <= value <= 1, "PWM value out of range: {}".format(value)
 
@@ -179,6 +218,13 @@ class Monarco(threading.Thread):
                 self.__cxt.tx_data.pwm2a_dc = self.__monarco.monarco_util_pwm_dc_to_u16(ctypes.c_double(value))
 
     def set_analog_out(self, port, value):
+        """
+        Write to analog output
+        :param port: What output to write to, must be AOUT[1-2]
+        :param value: Output value in volts, must be between 0V and 10V
+        :return: None
+        """
+
         assert port in [AOUT1, AOUT2], "Invalid analog out port"
         assert 0 <= value <= 10, "PWM value out of range: {}".format(value)
 
@@ -189,6 +235,12 @@ class Monarco(threading.Thread):
                 self.__cxt.tx_data.aout2 = self.__monarco.monarco_util_aout_volts_to_u16(ctypes.c_double(value))
 
     def get_analog_in(self, port):
+        """
+        Read analog input
+        :param port: What port to read from, must be AIN[1-2]
+        :return: Value in volts
+        """
+
         assert port in [AIN1, AIN2], "Invalid analog in port"
 
         with self.__mutex:
@@ -198,4 +250,9 @@ class Monarco(threading.Thread):
                 return self.__cxt.rx_data.ain2 * 10.0/4095.0
 
     def close(self):
+        """
+        Close connection
+        :return: None
+        """
+
         self.__monarco.monarco_exit(ctypes.pointer(self.__cxt))
