@@ -84,12 +84,22 @@ class _monarco_cxt_t(ctypes.Structure):
                 ('err_throttle_crc', ctypes.c_int), ]
 
 
+class DprintFlag:
+    MONARCO_DPF_ERROR = 0x01
+    MONARCO_DPF_WARNING = 0x02
+    MONARCO_DPF_INFO = 0x04
+    MONARCO_DPF_VERB = 0x08
+    MONARCO_DPF_READ = 0x10
+    MONARCO_DPF_WRITE = 0x20
+
+
 class Monarco:
-    def __init__(self, lib_path, spi_interface, spi_clock, debug_print_prefix):
+    def __init__(self, lib_path, spi_interface='/dev/spidev0.0', spi_clock=4000000, dprint_prefix='', debug_flag=0):
         self.__monarco = ctypes.CDLL(lib_path)
         self.__cxt = _monarco_cxt_t()
+        self.__monarco.set_dprint_flag(debug_flag)
         self.__monarco.monarco_init(ctypes.pointer(self.__cxt), ctypes.c_char_p(spi_interface.encode('utf-8')),
-                                    ctypes.c_uint32(spi_clock), ctypes.c_char_p(debug_print_prefix.encode('utf-8')))
+                                    ctypes.c_uint32(spi_clock), ctypes.c_char_p(dprint_prefix.encode('utf-8')))
         self.__cxt.tx_data.led_en = ctypes.c_uint8(0)  # Disable control over LEDs
 
     def set_analog_out(self, port, value):
