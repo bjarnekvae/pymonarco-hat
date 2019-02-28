@@ -121,7 +121,7 @@ class Monarco(threading.Thread):
                  dprint_prefix='', debug_flag=0, cycle_interval=0.01):
         """
         Initiate Monarco HAT shield, start thread for writing to IO.
-        :param lib_path: Path to Monarco-HAT lib file (eg. /path/to/lib/libmonarco.so
+        :param lib_path: Path to Monarco-HAT lib file (eg. /path/to/lib/libmonarco.so)
         :param spi_interface: Raspberry Pi SPI interface used to communicate with shield
         :param spi_clock: SPI clock speed in hz
         :param dprint_prefix: Prefix string to debug functionality
