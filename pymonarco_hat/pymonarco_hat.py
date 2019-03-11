@@ -222,6 +222,11 @@ class Monarco(threading.Thread):
                 self.__cxt.tx_data.pwm2a_dc = self.__monarco.monarco_util_pwm_dc_to_u16(ctypes.c_double(value))
 
     def get_counter_value(self, counter):
+        """
+        Read counter value
+        :param counter: What counter to read from, must be COUNTER[1-3]
+        :return: Counter value
+        """
         assert counter in [COUNTER1, COUNTER2, COUNTER3], "Invalid counter"
 
         with self.__mutex:
