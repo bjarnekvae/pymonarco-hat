@@ -109,6 +109,10 @@ PWM_CHANNEL2 = 2
 LOW = 0
 HIGH = 1
 
+COUNTER1 = 1
+COUNTER2 = 2
+COUNTER3 = 3
+
 AOUT1 = 1
 AOUT2 = 2
 
@@ -216,6 +220,17 @@ class Monarco(threading.Thread):
                 self.__cxt.tx_data.pwm1c_dc = self.__monarco.monarco_util_pwm_dc_to_u16(ctypes.c_double(value))
             elif port == DOUT4:
                 self.__cxt.tx_data.pwm2a_dc = self.__monarco.monarco_util_pwm_dc_to_u16(ctypes.c_double(value))
+
+    def get_counter_value(self, counter):
+        assert counter in [COUNTER1, COUNTER2, COUNTER3], "Invalid counter"
+
+        with self.__mutex:
+            if counter == COUNTER1:
+                return self.__cxt.tx_data.cnt1
+            elif counter == COUNTER2:
+                return self.__cxt.tx_data.cnt2
+            elif counter == COUNTER3:
+                return self.__cxt.tx_data.cnt3
 
     def set_analog_out(self, port, value):
         """
