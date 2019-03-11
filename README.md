@@ -41,7 +41,7 @@ python3 setup.py install
 ## Run example
 <pre>
 cd ~/pymonarco-hat/examples
-python3 monarco_example.py
+python3 monarco_example.py /path/to/lib/libmonarco.so
 </pre>
 
 In most cases the script has to be run as root, unless you've given your user right to access the SPI peripheral
