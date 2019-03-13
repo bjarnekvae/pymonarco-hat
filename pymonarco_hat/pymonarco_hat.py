@@ -226,7 +226,7 @@ class Monarco(threading.Thread):
         """
 
         assert port in [AOUT1, AOUT2], "Invalid analog out port"
-        assert 0 <= value <= 10, "PWM value out of range: {}".format(value)
+        assert 0 <= value <= 10, "Analog value out of range: {}".format(value)
 
         with self.__mutex:
             if port == AOUT1:
