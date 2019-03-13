@@ -250,12 +250,13 @@ class Monarco(threading.Thread):
 
         value = mode | (direction << 3) | (edge << 6)
 
-        self.__cxt.sdc_items[self.__cxt.sdc_size].address = counter
-        self.__cxt.sdc_items[self.__cxt.sdc_size].value = value
-        self.__cxt.sdc_items[self.__cxt.sdc_size].write = 1
-        self.__cxt.sdc_items[self.__cxt.sdc_size].request = 1
+        with self.__mutex:
+            self.__cxt.sdc_items[self.__cxt.sdc_size].address = counter
+            self.__cxt.sdc_items[self.__cxt.sdc_size].value = value
+            self.__cxt.sdc_items[self.__cxt.sdc_size].write = 1
+            self.__cxt.sdc_items[self.__cxt.sdc_size].request = 1
 
-        self.__cxt.sdc_size = self.__cxt.sdc_size + 1
+            self.__cxt.sdc_size = self.__cxt.sdc_size + 1
 
         # counter2 can not be acitvated simontanioulsy as PWM2 module!!!!
 
