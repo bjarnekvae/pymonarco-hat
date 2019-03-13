@@ -48,8 +48,7 @@ In most cases the script has to be run as root, unless you've given your user ri
 
 
 ## Note
-
-- Counter functionality is not implemented (yet)
+Its recommended to implement the Monarco HAT RTC clock to the Raspberry Pi's OS
 
 ## Requirements
 

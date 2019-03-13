@@ -109,9 +109,21 @@ PWM_CHANNEL2 = 2
 LOW = 0
 HIGH = 1
 
-COUNTER1 = 1
-COUNTER2 = 2
-COUNTER3 = 3
+COUNTER1 = 0x024
+COUNTER2 = 0x025
+
+COUNTER_MODE_DISABLED = 0
+COUNTER_MODE_PULSE_COUNT = 1
+COUNTER_MODE_QAUDRATURE = 2
+
+# If Mode is COUNTER_MODE_PULSE_COUNT
+COUNTER_DIRECTION_UP = 0
+COUNTER_DIRECTION_CTRL_EXT = 1
+
+# If Mode is COUNTER_MODE_PULSE_COUNT
+COUNTER_EDGE_RISE = 0
+COUNTER_EDGE_FALL = 1
+COUNTER_EDGE_BOTH = 2
 
 AOUT1 = 1
 AOUT2 = 2
@@ -221,21 +233,45 @@ class Monarco(threading.Thread):
             elif port == DOUT4:
                 self.__cxt.tx_data.pwm2a_dc = self.__monarco.monarco_util_pwm_dc_to_u16(ctypes.c_double(value))
 
+    def set_counter_mode(self, counter, mode=COUNTER_MODE_PULSE_COUNT,
+                         direction=COUNTER_DIRECTION_UP, edge=COUNTER_EDGE_RISE):
+        """
+
+        :param counter:
+        :param mode:
+        :param direction:
+        :param edge:
+        :return:
+        """
+        assert counter in [COUNTER1, COUNTER2], "Invalid counter"
+        assert mode in [COUNTER_MODE_DISABLED, COUNTER_MODE_PULSE_COUNT, COUNTER_MODE_QAUDRATURE], "Invalid mode"
+        assert direction in [COUNTER_DIRECTION_UP, COUNTER_DIRECTION_CTRL_EXT], "Invalid direction"
+        assert edge in [COUNTER_EDGE_RISE, COUNTER_EDGE_FALL, COUNTER_EDGE_BOTH], "Invalid edge"
+
+        value = mode | (direction << 3) | (edge << 6)
+
+        self.__cxt.sdc_items[self.__cxt.sdc_size].address = counter
+        self.__cxt.sdc_items[self.__cxt.sdc_size].value = value
+        self.__cxt.sdc_items[self.__cxt.sdc_size].write = 1
+        self.__cxt.sdc_items[self.__cxt.sdc_size].request = 1
+
+        self.__cxt.sdc_size = self.__cxt.sdc_size + 1
+
+        # counter2 can not be acitvated simontanioulsy as PWM2 module!!!!
+
     def get_counter_value(self, counter):
         """
         Read counter value
         :param counter: What counter to read from, must be COUNTER[1-3]
         :return: Counter value
         """
-        assert counter in [COUNTER1, COUNTER2, COUNTER3], "Invalid counter"
+        assert counter in [COUNTER1, COUNTER2], "Invalid counter"
 
         with self.__mutex:
             if counter == COUNTER1:
                 return self.__cxt.tx_data.cnt1
             elif counter == COUNTER2:
                 return self.__cxt.tx_data.cnt2
-            elif counter == COUNTER3:
-                return self.__cxt.tx_data.cnt3
 
     def set_analog_out(self, port, value):
         """
