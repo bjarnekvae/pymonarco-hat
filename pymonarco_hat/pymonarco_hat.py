@@ -256,7 +256,7 @@ class Monarco(threading.Thread):
             self.__cxt.sdc_items[self.__cxt.sdc_size].write = 1
             self.__cxt.sdc_items[self.__cxt.sdc_size].request = 1
 
-            self.__cxt.sdc_size = self.__cxt.sdc_size + 1
+            #self.__cxt.sdc_size = self.__cxt.sdc_size + 1
 
         # counter2 can not be acitvated simontanioulsy as PWM2 module!!!!
 
@@ -270,9 +270,9 @@ class Monarco(threading.Thread):
 
         with self.__mutex:
             if counter == COUNTER1:
-                return self.__cxt.tx_data.cnt1
+                return self.__cxt.rx_data.cnt1
             elif counter == COUNTER2:
-                return self.__cxt.tx_data.cnt2
+                return self.__cxt.rx_data.cnt2
 
     def set_analog_out(self, port, value):
         """
