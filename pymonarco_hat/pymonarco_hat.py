@@ -158,10 +158,17 @@ class Monarco(threading.Thread):
         self.daemon = True
         self.start()
 
+
     def run(self):
         while True:
             with self.__mutex:
                 self.__monarco.monarco_main(ctypes.pointer(self.__cxt))
+
+                if self.__cxt.rx_data.status_byte.cnt1_reset_done:
+                    self.__cxt.tx_data.control_byte.cnt1_reset = 0
+                elif self.__cxt.rx_data.status_byte.cnt2_reset_done:
+                    self.__cxt.tx_data.control_byte.cnt2_reset = 0
+
             time.sleep(self.cycle_interval)
 
     def set_digital_out(self, port, value):
@@ -273,6 +280,15 @@ class Monarco(threading.Thread):
                 return self.__cxt.rx_data.cnt1
             elif counter == COUNTER2:
                 return self.__cxt.rx_data.cnt2
+
+    def reset_counter(self, counter):
+        assert counter in [COUNTER1, COUNTER2], "Invalid counter"
+
+        with self.__mutex:
+            if counter == COUNTER1:
+                self.__cxt.tx_data.control_byte.cnt1_reset = 1
+            elif counter == COUNTER2:
+                self.__cxt.tx_data.control_byte.cnt1_reset = 1
 
     def set_analog_out(self, port, value):
         """
