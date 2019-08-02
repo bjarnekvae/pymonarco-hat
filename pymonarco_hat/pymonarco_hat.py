@@ -115,11 +115,13 @@ AOUT2 = 2
 AIN1 = 1
 AIN2 = 2
 
+AIN_VOLT = 0
+AIN_AMPERE = 1
+
 
 class Monarco(threading.Thread):
     def __init__(self, lib_path, spi_interface='/dev/spidev0.0', spi_clock=4000000,
-                 dprint_prefix='', debug_flag=0, cycle_interval=0.01,
-                 ain_configs = {"ain1":"v", "ain2":"v"}):
+                 dprint_prefix='', debug_flag=0, cycle_interval=0.01):
         """
         Initiate Monarco HAT shield, start thread for writing to IO.
         :param lib_path: Path to Monarco-HAT lib file (eg. /path/to/lib/libmonarco.so)
@@ -129,7 +131,6 @@ class Monarco(threading.Thread):
         :param debug_flag: Debug data to print (e.g debug_flag = MONARCO_DPF_ERROR | MONARCO_DPF_WARNING), for printing
         errors and warnings
         :param cycle_interval: How often to read/write PLC IO in seconds.
-        :param ain_configs: Set device to measure Volt or Ampere ("v" or "a")
         """
 
         self.__monarco = ctypes.CDLL(lib_path)
@@ -138,9 +139,8 @@ class Monarco(threading.Thread):
         self.__monarco.monarco_init(ctypes.pointer(self.__cxt), ctypes.c_char_p(spi_interface.encode('utf-8')),
                                     ctypes.c_uint32(spi_clock), ctypes.c_char_p(dprint_prefix.encode('utf-8')))
 
-        # Set configuration for Analog Inputs
-        self._ain_configs = ain_configs
-        self.set_config(ain_configs)
+        self.__ain1_mode = AIN_VOLT
+        self.__ain2_mode = AIN_VOLT
 
         threading.Thread.__init__(self)
         self.cycle_interval = cycle_interval
@@ -153,44 +153,6 @@ class Monarco(threading.Thread):
             with self.__mutex:
                 self.__monarco.monarco_main(ctypes.pointer(self.__cxt))
             time.sleep(self.cycle_interval)
-
-    def set_config(self, conf):
-        """Configure analog inputs to read Volt or Ampere
-
-        See the Monarco C driver complex example for more information
-
-        :param conf: Dictionary with keys ain1 and ain2 to specify measurement unit
-        """
-        # Status code
-        self.__cxt.sdc_items[0] = _monarco_sdc_item_t(address = int('0000', 2), factor=1)
-
-        # Firmware Version
-        self.__cxt.sdc_items[1] = _monarco_sdc_item_t(address = int('0001', 2), request=1)
-        self.__cxt.sdc_items[2] = _monarco_sdc_item_t(address = int('0010', 2), request=1)
-
-        # Hardware Version
-        self.__cxt.sdc_items[3] = _monarco_sdc_item_t(address = int('0011', 2), request=1)
-        self.__cxt.sdc_items[4] = _monarco_sdc_item_t(address = int('0100', 2), request=1)
-
-        # MCU ID
-        self.__cxt.sdc_items[5] = _monarco_sdc_item_t(address = int('0101', 2), request=1)
-        self.__cxt.sdc_items[6] = _monarco_sdc_item_t(address = int('0110', 2), request=1)
-        self.__cxt.sdc_items[7] = _monarco_sdc_item_t(address = int('0111', 2), request=1)
-        self.__cxt.sdc_items[8] = _monarco_sdc_item_t(address = int('1000', 2), request=1)
-
-        # Hardware configuration register 1 - Enable RS-485 termination, Volt or Ampere
-        if (conf["ain1"].lower() == "a" and conf["ain2"] == "a"):
-            self.__cxt.sdc_items[9] = _monarco_sdc_item_t(address = int('1010', 2), request=1, write=1, value=int("111", 2))
-        elif (conf["ain1"].lower() == "v" and conf["ain2"] == "a"):
-            self.__cxt.sdc_items[9] = _monarco_sdc_item_t(address = int('1010', 2), request=1, write=1, value=int("101", 2))
-        elif (conf["ain1"].lower() == "a" and conf["ain2"] == "v"):
-            self.__cxt.sdc_items[9] = _monarco_sdc_item_t(address = int('1010', 2), request=1, write=1, value=int("011", 2))
-        elif (conf["ain1"].lower() == "v" and conf["ain2"] == "v"):
-            self.__cxt.sdc_items[9] = _monarco_sdc_item_t(address = int('1010', 2), request=1, write=1, value=int("001", 2))
-        else:
-            raise ValueError("Unknown values in ain_configs. Must be a or v for Ampere or Volt!")
-
-        self.__cxt.sdc_size = 10
 
     def set_digital_out(self, port, value):
         """
@@ -278,11 +240,65 @@ class Monarco(threading.Thread):
             elif port == AOUT2:
                 self.__cxt.tx_data.aout2 = self.__monarco.monarco_util_aout_volts_to_u16(ctypes.c_double(value))
 
+    def set_ain_mode(self, port, mode):
+        """Configure analog inputs to read Volt or Ampere
+
+        See the Monarco C driver complex example for more information
+
+        :param port: What port to read from, must be AIN[1-2]
+        :param mode: Read mode, current or voltage, must be AIN_VOLT or AIN_AMPERE
+        """
+        assert port in [AIN1, AIN2], "Invalid AIN port"
+        assert mode in [AIN_VOLT, AIN_AMPERE], "Invalid mode for AIN port"
+
+        # Set ain state
+        if port == AIN1 and mode == AIN_VOLT:
+            self.__ain1_mode = AIN_VOLT
+        if port == AIN1 and mode == AIN_AMPERE:
+            self.__ain1_mode = AIN_AMPERE
+        if port == AIN2 and mode == AIN_VOLT:
+            self.__ain2_mode = AIN_VOLT
+        if port == AIN2 and mode == AIN_AMPERE:
+            self.__ain2_mode = AIN_AMPERE
+
+        val = 0b001
+        if self.__ain1_mode == AIN_AMPERE and self.__ain2_mode == AIN_AMPERE:
+            val = 0b111
+        elif self.__ain1_mode == AIN_VOLT and self.__ain2_mode == AIN_AMPERE:
+            val = 0b101
+        elif self.__ain1_mode == AIN_AMPERE and self.__ain2_mode == AIN_VOLT:
+            val = 0b011
+        elif self.__ain1_mode == AIN_VOLT and self.__ain2_mode == AIN_VOLT:
+            val = 0b001
+
+        with self.__mutex:
+            # Status code
+            self.__cxt.sdc_items[0] = _monarco_sdc_item_t(address=int('0000', 2), factor=1)
+
+            # Firmware Version
+            self.__cxt.sdc_items[1] = _monarco_sdc_item_t(address=int('0001', 2), request=1)
+            self.__cxt.sdc_items[2] = _monarco_sdc_item_t(address=int('0010', 2), request=1)
+
+            # Hardware Version
+            self.__cxt.sdc_items[3] = _monarco_sdc_item_t(address=int('0011', 2), request=1)
+            self.__cxt.sdc_items[4] = _monarco_sdc_item_t(address=int('0100', 2), request=1)
+
+            # MCU ID
+            self.__cxt.sdc_items[5] = _monarco_sdc_item_t(address=int('0101', 2), request=1)
+            self.__cxt.sdc_items[6] = _monarco_sdc_item_t(address=int('0110', 2), request=1)
+            self.__cxt.sdc_items[7] = _monarco_sdc_item_t(address=int('0111', 2), request=1)
+            self.__cxt.sdc_items[8] = _monarco_sdc_item_t(address=int('1000', 2), request=1)
+
+            # Hardware configuration register 1 - Enable RS-485 termination, Volt or Ampere
+            self.__cxt.sdc_items[9] = _monarco_sdc_item_t(address=int('1010', 2), request=1, write=1, value=int(val))
+
+            self.__cxt.sdc_size = 10
+
     def get_analog_in(self, port):
         """
         Read analog input
         :param port: What port to read from, must be AIN[1-2]
-        :return: Value in volts
+        :return: Value in volts [V] or ampere [A], depending og AIN mode
         """
 
         V_MAX = 10.0
@@ -293,20 +309,16 @@ class Monarco(threading.Thread):
 
         with self.__mutex:
             if port == AIN1:
-                if self._ain_configs["ain1"] == "a":
+                if self.__ain1_mode == AIN_AMPERE:
                     return self.__cxt.rx_data.ain1 * A_MAX/RANGE
-                elif self._ain_configs["ain1"] == "v":
+                elif self.__ain1_mode == AIN_VOLT:
                     return self.__cxt.rx_data.ain1 * V_MAX/RANGE
-                else:
-                    raise ValueError("Config for AIN1 must be a or v. Got %s", self._ain_configs["ain1"])
 
             elif port == AIN2:
-                if self._ain_configs["ain2"] == "a":
+                if self.__ain2_mode == AIN_AMPERE:
                     return self.__cxt.rx_data.ain2 * A_MAX/RANGE
-                elif self._ain_configs["ain2"] == "v":
+                elif self.__ain2_mode == AIN_VOLT:
                     return self.__cxt.rx_data.ain2 * V_MAX/RANGE
-                else:
-                    raise ValueError("Config for AIN2 must be a or v. Got %s", self._ain_configs["ain2"])
 
 
     def close(self):
