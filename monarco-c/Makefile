@@ -7,6 +7,10 @@ CFLAGS = -march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=hard -g -fPIC -c -Wall -Wno-
 default: $(TARGET)
 all: default
 
+ifeq (,$(subst ",,$(MONARCO_PATH)))
+    $(error MONARCO_PATH is not set)
+endif
+
 SRCPATH = $(MONARCO_PATH)/src
 INCLUDEPATH = -I$(MONARCO_PATH)/ -I$(MONARCO_PATH)/platform/linux
 OBJECTS = dprint_flags.o dprint_flags.c $(patsubst %.c, %.o, $(wildcard $(SRCPATH)/*.c))
