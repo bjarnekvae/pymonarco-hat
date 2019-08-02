@@ -115,6 +115,8 @@ COUNTER2 = 0x025
 COUNTER_MODE_DISABLED = 0
 COUNTER_MODE_PULSE_COUNT = 1
 COUNTER_MODE_QAUDRATURE = 2
+COUNTER_MODE_PWM1 = 3
+COUNTER_MODE_PWM2 = 4
 
 # If Mode is COUNTER_MODE_PULSE_COUNT
 COUNTER_DIRECTION_UP = 0
@@ -158,7 +160,6 @@ class Monarco(threading.Thread):
         self.daemon = True
         self.start()
 
-
     def run(self):
         while True:
             with self.__mutex:
@@ -166,7 +167,7 @@ class Monarco(threading.Thread):
 
                 if self.__cxt.rx_data.status_byte.cnt1_reset_done:
                     self.__cxt.tx_data.control_byte.cnt1_reset = 0
-                elif self.__cxt.rx_data.status_byte.cnt2_reset_done:
+                if self.__cxt.rx_data.status_byte.cnt2_reset_done:
                     self.__cxt.tx_data.control_byte.cnt2_reset = 0
 
             time.sleep(self.cycle_interval)
@@ -243,7 +244,7 @@ class Monarco(threading.Thread):
     def set_counter_mode(self, counter, mode=COUNTER_MODE_PULSE_COUNT,
                          direction=COUNTER_DIRECTION_UP, edge=COUNTER_EDGE_RISE):
         """
-
+        Note: counter2 can not be activated simultaneously as PWM2 module
         :param counter:
         :param mode:
         :param direction:
@@ -251,21 +252,24 @@ class Monarco(threading.Thread):
         :return:
         """
         assert counter in [COUNTER1, COUNTER2], "Invalid counter"
-        assert mode in [COUNTER_MODE_DISABLED, COUNTER_MODE_PULSE_COUNT, COUNTER_MODE_QAUDRATURE], "Invalid mode"
+        assert mode in [COUNTER_MODE_DISABLED, COUNTER_MODE_PULSE_COUNT, COUNTER_MODE_QAUDRATURE,
+                        COUNTER_MODE_PWM1, COUNTER_MODE_PWM2], "Invalid mode"
         assert direction in [COUNTER_DIRECTION_UP, COUNTER_DIRECTION_CTRL_EXT], "Invalid direction"
         assert edge in [COUNTER_EDGE_RISE, COUNTER_EDGE_FALL, COUNTER_EDGE_BOTH], "Invalid edge"
 
         value = mode | (direction << 3) | (edge << 6)
+        print("mode:", bin(mode), "direction:", bin(direction), "edge:", bin(edge))
+        print("value:", bin(value))
 
         with self.__mutex:
-            self.__cxt.sdc_items[self.__cxt.sdc_size].address = counter
-            self.__cxt.sdc_items[self.__cxt.sdc_size].value = value
+            self.__cxt.sdc_items[self.__cxt.sdc_size].address = ctypes.c_uint16(counter)
+            self.__cxt.sdc_items[self.__cxt.sdc_size].value = ctypes.c_uint16(value)
             self.__cxt.sdc_items[self.__cxt.sdc_size].write = 1
             self.__cxt.sdc_items[self.__cxt.sdc_size].request = 1
+            self.__cxt.sdc_items[self.__cxt.sdc_size].done = 0
 
-            #self.__cxt.sdc_size = self.__cxt.sdc_size + 1
+            self.__cxt.sdc_size = self.__cxt.sdc_size + 1
 
-        # counter2 can not be acitvated simontanioulsy as PWM2 module!!!!
 
     def get_counter_value(self, counter):
         """
