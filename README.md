@@ -58,7 +58,3 @@ In most cases the script has to be run as root, unless you've given your user ri
 ## License
 
 Under MIT license. See [LICENSE](LICENSE).
-
-## Authors
-
-- Bjarne Kvæstad <bjarnekvae@gmail.com>
