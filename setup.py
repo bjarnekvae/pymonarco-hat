@@ -2,8 +2,6 @@ from setuptools import setup
 
 setup(name='pymonarco-hat',
       version='0.1',
-      author='Bjarne Kvaestad',
-      author_email='bjarnekvae@gmail.com',
       url='https://github.com/bjarnekvae/pymonarco-hat',
       description='Python wrapper for Monarco HAT C driver',
       long_description_content_type='text/markdown',
